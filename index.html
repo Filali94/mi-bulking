@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mi Bulking · Control de Peso</title>
+<style>
+  :root{
+    --bg:#0e1116;
+    --card:#171c24;
+    --card2:#1f2630;
+    --line:#2a323d;
+    --text:#e8edf2;
+    --muted:#8b97a6;
+    --accent:#5cb8f6;
+    --accent-dim:#3f97e0;
+    --up:#5cb8f6;
+    --down:#f87171;
+    --flat:#8b97a6;
+    --blue:#5cb8f6;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.4;
+    padding:18px 16px 60px;
+    max-width:560px;
+    margin:0 auto;
+  }
+  h1{font-size:22px;margin:0 0 2px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:16px;
+  }
+
+  /* --- Input de hoy --- */
+  .today-label{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .date-row{display:flex;gap:10px;margin-bottom:12px}
+  .date-row input[type=date]{
+    flex:1;background:var(--card2);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;
+  }
+  .weigh-row{display:flex;gap:10px;align-items:stretch}
+  .weigh-row input[type=number]{
+    flex:1;background:var(--card2);border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:0 16px;font-size:30px;font-weight:700;text-align:center;
+    font-family:inherit;min-width:0;
+  }
+  .weigh-row input[type=number]::placeholder{color:#3d4754;font-weight:600}
+  input:focus{outline:none;border-color:var(--accent)}
+  .unit{display:flex;align-items:center;color:var(--muted);font-size:18px;font-weight:600;padding:0 4px}
+  button{
+    cursor:pointer;font-family:inherit;border:none;border-radius:12px;font-weight:700;
+  }
+  .btn-add{
+    background:var(--accent);color:#07120a;font-size:17px;padding:0 22px;
+    transition:transform .08s, background .15s;
+  }
+  .btn-add:active{transform:scale(.96)}
+  .btn-add:disabled{background:var(--card2);color:var(--muted);cursor:not-allowed}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+
+  /* --- Semana en curso --- */
+  .progress-track{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin:12px 0 6px}
+  .progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .35s}
+  .week-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .week-meta b{color:var(--text)}
+
+  .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:14px}
+  .day-cell{
+    background:var(--card2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 4px;text-align:center;min-height:54px;display:flex;flex-direction:column;
+    justify-content:center;gap:2px;position:relative;
+  }
+  .day-cell.filled{border-color:var(--accent-dim)}
+  .day-cell .dnum{font-size:10px;color:var(--muted)}
+  .day-cell .dval{font-size:14px;font-weight:700}
+  .day-cell .dval.empty{color:#3d4754;font-weight:600}
+  .day-cell .del{
+    position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+    background:var(--down);color:#1a0606;font-size:12px;line-height:18px;display:none;
+    font-weight:700;
+  }
+  .day-cell.filled:hover .del{display:block}
+
+  /* --- Resumen semanal --- */
+  .section-title{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:24px 4px 12px}
+  .week-card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;
+  }
+  .week-card .wk-idx{
+    width:42px;height:42px;border-radius:11px;background:var(--card2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .week-card .wk-idx span:first-child{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .week-card .wk-idx span:last-child{font-size:18px;font-weight:800;line-height:1}
+  .week-card .wk-main{flex:1;min-width:0}
+  .week-card .wk-avg{font-size:21px;font-weight:800;letter-spacing:-.5px}
+  .week-card .wk-avg small{font-size:13px;color:var(--muted);font-weight:600}
+  .week-card .wk-range{font-size:12px;color:var(--muted)}
+  .delta{
+    text-align:right;font-weight:800;font-size:16px;flex-shrink:0;display:flex;
+    flex-direction:column;align-items:flex-end;gap:1px;
+  }
+  .delta small{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;opacity:.8}
+  .delta.up{color:var(--up)}
+  .delta.down{color:var(--down)}
+  .delta.flat{color:var(--flat)}
+  .week-card.partial{opacity:.7;border-style:dashed}
+
+  .empty-state{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px}
+
+  /* --- Stats globales --- */
+  .stats-row{display:flex;gap:10px;margin-bottom:16px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+  .stat .sv{font-size:20px;font-weight:800;letter-spacing:-.5px}
+  .stat .sl{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* --- Footer / acciones --- */
+  .actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+  .btn-ghost{
+    background:var(--card);border:1px solid var(--line);color:var(--muted);
+    font-size:13px;padding:10px 14px;flex:1;
+  }
+  .btn-ghost:active{background:var(--card2)}
+  input[type=file]{display:none}
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);
+    background:var(--accent);color:#07120a;padding:12px 22px;border-radius:99px;
+    font-weight:700;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:50;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  /* --- META / MOTIVACIÓN --- */
+  .goal-card{
+    background:linear-gradient(135deg, #1b2632, #14181f);
+    border:1px solid #34465a;
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .goal-card::after{
+    content:"🎯";font-size:90px;position:absolute;right:-14px;top:-18px;opacity:.10;transform:rotate(12deg);
+  }
+  .goal-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .goal-head .tag{
+    font-size:10px;font-weight:800;letter-spacing:1px;color:#07120a;background:var(--accent);
+    padding:3px 9px;border-radius:99px;text-transform:uppercase;
+  }
+  .goal-head h2{font-size:16px;margin:0;letter-spacing:-.3px}
+  .goal-quote{
+    font-size:14px;font-style:italic;color:#d3e3f2;margin:8px 0 16px;line-height:1.6;
+    border-left:3px solid var(--accent);padding-left:11px;
+  }
+  .goal-quote .ar{display:block;font-style:normal;font-size:18px;color:#eaf3fb;margin-bottom:6px;direction:rtl;line-height:1.7}
+  .goal-quote span{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:4px}
+  .milestone{
+    background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:13px;
+    padding:13px 14px;margin-top:10px;
+  }
+  .ms-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .ms-name{font-size:14px;font-weight:800}
+  .ms-name .yr{color:var(--accent);}
+  .ms-days{font-size:13px;color:var(--muted)}
+  .ms-days b{color:var(--text);font-size:15px}
+  .ms-track{height:7px;background:#0d1117;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+  .ms-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .5s}
+  .ms-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<h1>Mi Bulking 💪</h1>
+<p class="sub">Pésate cada día. Cada 7 pesajes calculo tu media semanal.</p>
+
+<!-- META / MOTIVACIÓN -->
+<div class="goal-card">
+  <div class="goal-head">
+    <span class="tag">Mi meta</span>
+    <h2>Confía en el proceso</h2>
+  </div>
+  <div class="goal-quote" id="goalQuote"></div>
+  <div id="milestones"></div>
+</div>
+
+<div class="stats-row" id="statsRow"></div>
+
+<!-- PESAJE DE HOY -->
+<div class="card">
+  <div class="today-label">Pesaje del día</div>
+  <div class="date-row">
+    <input type="date" id="dateInput">
+  </div>
+  <div class="weigh-row">
+    <input type="number" id="weightInput" inputmode="decimal" step="0.1" min="0" placeholder="0.0">
+    <div class="unit">kg</div>
+    <button class="btn-add" id="addBtn" onclick="addWeight()">Guardar</button>
+  </div>
+  <div class="hint" id="todayHint"></div>
+</div>
+
+<!-- SEMANA EN CURSO -->
+<div class="card" id="currentWeekCard">
+  <div class="today-label" id="curWeekTitle">Semana en curso</div>
+  <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+  <div class="week-meta">
+    <span id="progText">0 de 7 días</span>
+    <span id="progAvg"></span>
+  </div>
+  <div class="days-grid" id="daysGrid"></div>
+</div>
+
+<!-- HISTORIAL SEMANAL -->
+<div class="section-title">Medias semanales</div>
+<div id="weeksList"></div>
+
+<div class="actions">
+  <button class="btn-ghost" onclick="exportData()">⬇ Exportar copia</button>
+  <button class="btn-ghost" onclick="document.getElementById('importFile').click()">⬆ Importar copia</button>
+  <button class="btn-ghost" onclick="resetAll()">🗑 Borrar todo</button>
+  <input type="file" id="importFile" accept="application/json" onchange="importData(event)">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'bulking_weights_v1';
+const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+let entries = load(); // [{date:'YYYY-MM-DD', kg:Number}]
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || []; }
+  catch(e){ return []; }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(entries)); }
+
+function todayStr(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d - off*60000).toISOString().slice(0,10);
+}
+
+function fmt(n){ return Number(n).toFixed(1); }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 1900);
+}
+
+function addWeight(){
+  const wEl = document.getElementById('weightInput');
+  const dEl = document.getElementById('dateInput');
+  const kg = parseFloat(wEl.value);
+  const date = dEl.value || todayStr();
+  if(isNaN(kg) || kg<=0){ toast('Introduce un peso válido'); wEl.focus(); return; }
+
+  const existing = entries.find(e=>e.date===date);
+  if(existing){
+    existing.kg = Math.round(kg*10)/10;
+    toast('Peso del día actualizado ✓');
+  }else{
+    entries.push({date, kg: Math.round(kg*10)/10});
+    toast('Pesaje guardado ✓');
+  }
+  entries.sort((a,b)=>a.date.localeCompare(b.date));
+  save();
+  wEl.value='';
+  render();
+}
+
+function deleteEntry(date){
+  entries = entries.filter(e=>e.date!==date);
+  save(); render();
+  toast('Pesaje eliminado');
+}
+
+// Agrupa en bloques de 7 pesajes (orden cronológico)
+function getWeeks(){
+  const weeks = [];
+  for(let i=0;i<entries.length;i+=7){
+    weeks.push(entries.slice(i,i+7));
+  }
+  return weeks;
+}
+
+function avg(arr){
+  if(!arr.length) return null;
+  return arr.reduce((s,e)=>s+e.kg,0)/arr.length;
+}
+
+function render(){
+  const weeks = getWeeks();
+  const fullWeeks = weeks.filter(w=>w.length===7);
+  const current = weeks.length && weeks[weeks.length-1].length<7 ? weeks[weeks.length-1] : [];
+  const currentWeekIdx = weeks.length ? weeks.length : 1;
+
+  renderStats(fullWeeks);
+  renderCurrentWeek(current, currentWeekIdx, weeks.length, weeks[weeks.length-1]);
+  renderWeeks(weeks);
+  renderTodayHint();
+  renderGoalProgress();
+}
+
+function renderTodayHint(){
+  const date = document.getElementById('dateInput').value || todayStr();
+  const ex = entries.find(e=>e.date===date);
+  const h = document.getElementById('todayHint');
+  const btn = document.getElementById('addBtn');
+  if(ex){
+    h.textContent = `Ya tienes ${fmt(ex.kg)} kg en este día · guardar lo sobrescribe`;
+    btn.textContent = 'Actualizar';
+  }else{
+    h.textContent = 'Se guarda en este dispositivo. Un pesaje por día.';
+    btn.textContent = 'Guardar';
+  }
+}
+
+function renderStats(fullWeeks){
+  const row = document.getElementById('statsRow');
+  const total = entries.length;
+  let trendHtml = '<div class="stat"><div class="sv">—</div><div class="sl">Tendencia</div></div>';
+  let lastAvgHtml = '<div class="stat"><div class="sv">—</div><div class="sl">Última media</div></div>';
+
+  if(fullWeeks.length>=1){
+    const lastAvg = avg(fullWeeks[fullWeeks.length-1]);
+    lastAvgHtml = `<div class="stat"><div class="sv">${fmt(lastAvg)}<small style="font-size:12px;color:var(--muted)"> kg</small></div><div class="sl">Última media</div></div>`;
+  }
+  if(fullWeeks.length>=2){
+    const a = avg(fullWeeks[fullWeeks.length-2]);
+    const b = avg(fullWeeks[fullWeeks.length-1]);
+    const d = b-a;
+    const cls = d>0.05?'up':d<-0.05?'down':'flat';
+    const col = d>0.05?'var(--up)':d<-0.05?'var(--down)':'var(--flat)';
+    const arrow = d>0.05?'▲':d<-0.05?'▼':'=';
+    trendHtml = `<div class="stat"><div class="sv" style="color:${col}">${arrow} ${d>0?'+':''}${fmt(d)}</div><div class="sl">vs semana previa</div></div>`;
+  }
+
+  row.innerHTML =
+    `<div class="stat"><div class="sv">${total}</div><div class="sl">Pesajes</div></div>` +
+    lastAvgHtml + trendHtml;
+}
+
+function renderCurrentWeek(current, idx, totalWeeks, lastBlock){
+  document.getElementById('curWeekTitle').textContent = `Semana ${totalWeeks||1} · en curso`;
+  // Si la última semana está completa, la "en curso" es la siguiente (vacía)
+  let block = current;
+  if(lastBlock && lastBlock.length===7) block = [];
+  const n = block.length;
+  document.getElementById('progFill').style.width = (n/7*100)+'%';
+  document.getElementById('progText').innerHTML = `<b>${n}</b> de 7 días`;
+  const a = avg(block);
+  document.getElementById('progAvg').innerHTML = a!==null ? `media parcial <b>${fmt(a)} kg</b>` : '';
+
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML='';
+  for(let i=0;i<7;i++){
+    const e = block[i];
+    const cell = document.createElement('div');
+    cell.className = 'day-cell'+(e?' filled':'');
+    if(e){
+      const dayName = DAYS[(new Date(e.date+'T00:00').getDay()+6)%7];
+      cell.innerHTML = `<div class="dnum">${dayName}</div><div class="dval">${fmt(e.kg)}</div>`+
+                       `<div class="del" title="Eliminar" onclick="deleteEntry('${e.date}')">×</div>`;
+    }else{
+      cell.innerHTML = `<div class="dnum">Día ${i+1}</div><div class="dval empty">—</div>`;
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function renderWeeks(weeks){
+  const list = document.getElementById('weeksList');
+  list.innerHTML='';
+  const completed = weeks.filter(w=>w.length===7);
+
+  if(completed.length===0){
+    list.innerHTML = `<div class="card empty-state">Aún no hay ninguna semana completa.<br>Completa 7 pesajes para ver tu primera media. 📈</div>`;
+    return;
+  }
+
+  // Mostrar de la más reciente a la más antigua
+  let prevAvg = null;
+  const rows = [];
+  completed.forEach((w,i)=>{
+    const a = avg(w);
+    let delta = null;
+    if(i>0) delta = a - avg(completed[i-1]);
+    rows.push({i, w, a, delta});
+  });
+
+  rows.slice().reverse().forEach(r=>{
+    const w = r.w;
+    const range = `${fmtDate(w[0].date)} – ${fmtDate(w[6].date)}`;
+    let deltaHtml = '<div class="delta flat"><span>—</span><small>1ª semana</small></div>';
+    if(r.delta!==null){
+      const d = r.delta;
+      const cls = d>0.05?'up':d<-0.05?'down':'flat';
+      const arrow = d>0.05?'▲':d<-0.05?'▼':'=';
+      const lbl = d>0.05?'subiste':d<-0.05?'bajaste':'igual';
+      deltaHtml = `<div class="delta ${cls}"><span>${arrow} ${d>0?'+':''}${fmt(d)} kg</span><small>${lbl}</small></div>`;
+    }
+    const card = document.createElement('div');
+    card.className='week-card';
+    card.innerHTML =
+      `<div class="wk-idx"><span>Sem</span><span>${r.i+1}</span></div>`+
+      `<div class="wk-main">`+
+        `<div class="wk-avg">${fmt(r.a)} <small>kg media</small></div>`+
+        `<div class="wk-range">${range}</div>`+
+      `</div>`+
+      deltaHtml;
+    list.appendChild(card);
+  });
+}
+
+function fmtDate(s){
+  const d = new Date(s+'T00:00');
+  return d.getDate()+'/'+(d.getMonth()+1);
+}
+
+/* --- Backup --- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bulking-peso-'+todayStr()+'.json';
+  a.click();
+  toast('Copia exportada');
+}
+function importData(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const data = JSON.parse(r.result);
+      if(!Array.isArray(data)) throw 0;
+      entries = data.filter(e=>e.date && typeof e.kg==='number');
+      entries.sort((a,b)=>a.date.localeCompare(b.date));
+      save(); render();
+      toast('Datos importados ✓');
+    }catch(e){ toast('Archivo no válido'); }
+  };
+  r.readAsText(file);
+  ev.target.value='';
+}
+function resetAll(){
+  if(confirm('¿Borrar TODOS los pesajes? Esto no se puede deshacer.')){
+    entries=[]; save(); render(); toast('Todo borrado');
+  }
+}
+
+/* --- META / MOTIVACIÓN --- */
+const MILESTONES = [
+  { name:'Primer gran objetivo', date:'2027-05-01', label:'Mayo', year:'2027' },
+  { name:'La meta final',         date:'2028-05-01', label:'Mayo', year:'2028' },
+];
+// Punto de partida del viaje (primer pesaje, o hoy si aún no hay datos)
+function journeyStart(){
+  return entries.length ? entries[0].date : todayStr();
+}
+// [árabe, traducción, fuente]
+const QUOTES = [
+  ['فَإِنَّ مَعَ الْعُسْرِ يُسْرًا','Verdaderamente, con la dificultad viene la facilidad.','Corán 94:6'],
+  ['وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ','El ser humano no obtendrá sino el fruto de su esfuerzo.','Corán 53:39'],
+  ['إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ','Allah no cambia la condición de un pueblo hasta que cambian lo que hay en sí mismos.','Corán 13:11'],
+  ['وَكُلُوا وَاشْرَبُوا وَلَا تُسْرِفُوا','Comed y bebed, pero sin excederos.','Corán 7:31'],
+  ['وَاصْبِرْ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ','Ten paciencia, pues Allah está con los pacientes.','Corán 8:46'],
+  ['الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ','El creyente fuerte es mejor y más amado por Allah que el creyente débil.','Hadiz · Sahih Muslim'],
+  ['إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ','Las acciones valen por sus intenciones.','Hadiz · Bujari y Muslim'],
+  ['اغْتَنِمْ صِحَّتَكَ قَبْلَ سَقَمِكَ','Aprovecha tu salud antes de tu enfermedad.','Hadiz · Al-Hakim'],
+  ['إِنَّ اللَّهَ يُحِبُّ إِذَا عَمِلَ أَحَدُكُمْ عَمَلًا أَنْ يُتْقِنَهُ','Allah ama que, cuando hagáis algo, lo hagáis con excelencia.','Hadiz · At-Tabarani'],
+];
+
+function daysBetween(a,b){
+  const d = (new Date(b+'T00:00') - new Date(a+'T00:00')) / 86400000;
+  return Math.round(d);
+}
+
+function showQuote(){
+  const q = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  document.getElementById('goalQuote').innerHTML =
+    `<span class="ar">${q[0]}</span>“${q[1]}”<span>— ${q[2]}</span>`;
+}
+
+function renderGoalProgress(){
+  const today = todayStr();
+  const start = journeyStart();
+  const cont = document.getElementById('milestones');
+  cont.innerHTML = '';
+
+  MILESTONES.forEach(m=>{
+    const totalDays = Math.max(daysBetween(start, m.date), 1);
+    const passed = Math.max(daysBetween(start, today), 0);
+    const left = daysBetween(today, m.date);
+    const pct = Math.max(0, Math.min(100, passed/totalDays*100));
+    const weeksLeft = Math.max(0, Math.ceil(left/7));
+
+    let daysHtml, subRight;
+    if(left > 0){
+      daysHtml = `<span class="ms-days"><b>${left}</b> días</span>`;
+      subRight = `${weeksLeft} semanas · ${pct.toFixed(0)}% recorrido`;
+    }else if(left === 0){
+      daysHtml = `<span class="ms-days" style="color:var(--accent)"><b>¡HOY!</b></span>`;
+      subRight = '¡Día de la meta! 🏆';
+    }else{
+      daysHtml = `<span class="ms-days" style="color:var(--accent)"><b>✓ Logrado</b></span>`;
+      subRight = '¡Meta superada! 🏆';
+    }
+
+    const el = document.createElement('div');
+    el.className = 'milestone';
+    el.innerHTML =
+      `<div class="ms-top">`+
+        `<span class="ms-name">${m.label} <span class="yr">${m.year}</span> · ${m.name}</span>`+
+        daysHtml+
+      `</div>`+
+      `<div class="ms-track"><div class="ms-fill" style="width:${pct}%"></div></div>`+
+      `<div class="ms-sub"><span>Hoy</span><span>${subRight}</span></div>`;
+    cont.appendChild(el);
+  });
+}
+
+/* --- Init --- */
+document.getElementById('dateInput').value = todayStr();
+document.getElementById('dateInput').addEventListener('change', renderTodayHint);
+document.getElementById('weightInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addWeight(); });
+showQuote();
+setInterval(showQuote, 12000); // la frase de Ali va rotando para motivar
+render();
+</script>
+</body>
+</html>
