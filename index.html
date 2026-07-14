@@ -20,6 +20,21 @@
     --blue:#5cb8f6;
     --radius:16px;
   }
+  /* MODO DÍA (fondo blanco) */
+  body.light{
+    --bg:#eef2f7;
+    --card:#ffffff;
+    --card2:#f1f4f9;
+    --line:#dde3ec;
+    --text:#1a2129;
+    --muted:#5f6b7a;
+    --accent:#2a86d8;
+    --accent-dim:#1f6fbf;
+    --up:#2a86d8;
+    --down:#e05555;
+    --flat:#8a95a3;
+    --blue:#2a86d8;
+  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{
@@ -31,7 +46,14 @@
     max-width:560px;
     margin:0 auto;
   }
+  .app-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
   h1{font-size:22px;margin:0 0 2px;letter-spacing:-.4px}
+  .theme-toggle{
+    background:var(--card);border:1px solid var(--line);color:var(--text);
+    width:40px;height:40px;border-radius:12px;font-size:19px;line-height:1;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .theme-toggle:active{transform:scale(.94)}
   .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
 
   .card{
@@ -199,7 +221,10 @@
 </head>
 <body>
 
-<h1>Mi Bulking 💪</h1>
+<div class="app-head">
+  <h1>Mi Bulking 💪</h1>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar modo día / noche">🌙</button>
+</div>
 <p class="sub">Pésate cada día. Cada 7 pesajes calculo tu media semanal.</p>
 
 <!-- META / MOTIVACIÓN -->
@@ -640,6 +665,20 @@ function renderGoalProgress(){
     cont.appendChild(el);
   });
 }
+
+/* --- TEMA día / noche --- */
+const THEME_KEY = 'bulking_theme';
+function applyTheme(t){
+  const light = t === 'light';
+  document.body.classList.toggle('light', light);
+  document.getElementById('themeToggle').textContent = light ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  const next = document.body.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 
 /* --- Init --- */
 document.getElementById('dateInput').value = todayStr();
